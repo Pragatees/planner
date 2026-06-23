@@ -13,7 +13,7 @@ import {
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const { width: W, height: H } = Dimensions.get("window");
+const { width: W } = Dimensions.get("window");
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -41,10 +41,7 @@ interface Slide {
 function IllustrationOrganize() {
   return (
     <View style={il.wrap}>
-      {/* Background glow */}
       <View style={[il.glow, { backgroundColor: C.accent + "18" }]} />
-
-      {/* Task list card */}
       <View style={[il.card, { width: 180, padding: 16 }]}>
         {[
           { done: true, width: 100 },
@@ -70,14 +67,10 @@ function IllustrationOrganize() {
           </View>
         ))}
       </View>
-
-      {/* Floating tag */}
       <View style={[il.pill, { top: 28, right: 28 }]}>
         <View style={[il.pillDot, { backgroundColor: C.success }]} />
         <View style={[il.lineBar, { width: 44, opacity: 0.6 }]} />
       </View>
-
-      {/* Floating calendar block */}
       <View style={[il.miniCard, { bottom: 32, right: 16 }]}>
         <View style={[il.miniBar, { width: 28, backgroundColor: C.accent }]} />
         <View style={[il.miniBar, { width: 40, opacity: 0.4 }]} />
@@ -91,8 +84,6 @@ function IllustrationProgress() {
   return (
     <View style={il.wrap}>
       <View style={[il.glow, { backgroundColor: C.accentSoft + "18" }]} />
-
-      {/* Bar chart card */}
       <View style={[il.card, { width: 190, padding: 18, alignItems: "flex-end" }]}>
         <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 10, height: 80 }}>
           {bars.map((h, i) => (
@@ -108,17 +99,12 @@ function IllustrationProgress() {
             </View>
           ))}
         </View>
-        {/* X-axis */}
         <View style={[il.lineBar, { width: "100%", opacity: 0.2, marginTop: 8 }]} />
       </View>
-
-      {/* Streak pill */}
       <View style={[il.pill, { top: 24, left: 20 }]}>
         <View style={[il.pillDot, { backgroundColor: C.success }]} />
         <View style={[il.lineBar, { width: 38, opacity: 0.55 }]} />
       </View>
-
-      {/* % badge */}
       <View
         style={[
           il.miniCard,
@@ -136,8 +122,6 @@ function IllustrationGrowth() {
   return (
     <View style={il.wrap}>
       <View style={[il.glow, { backgroundColor: C.success + "14" }]} />
-
-      {/* Central circle */}
       <View
         style={{
           width: 96,
@@ -162,7 +146,6 @@ function IllustrationGrowth() {
             backgroundColor: C.surfaceAlt,
           }}
         >
-          {/* Inner dot */}
           <View
             style={{
               width: 28,
@@ -174,8 +157,6 @@ function IllustrationGrowth() {
           />
         </View>
       </View>
-
-      {/* Orbiting nodes */}
       {[
         { top: 10, left: 48, color: C.success },
         { top: 72, right: 12, color: C.accentSoft },
@@ -196,8 +177,6 @@ function IllustrationGrowth() {
           ]}
         />
       ))}
-
-      {/* Connecting lines */}
       <View
         style={{
           position: "absolute",
@@ -218,8 +197,6 @@ function IllustrationGrowth() {
           backgroundColor: C.accentSoft + "33",
         }}
       />
-
-      {/* Goal card */}
       <View style={[il.card, { width: 150, padding: 12, bottom: 20, position: "absolute" }]}>
         <View style={[il.miniBar, { width: "100%", backgroundColor: C.success, opacity: 0.7 }]} />
         <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
@@ -322,15 +299,13 @@ const SLIDES: Slide[] = [
   {
     id: "1",
     headline: "Organize Your Life",
-    description:
-      "Capture tasks, build routines, and create structure in your daily life.",
+    description: "Capture tasks, build routines, and create structure in your daily life.",
     illustration: <IllustrationOrganize />,
   },
   {
     id: "2",
     headline: "Track Your Progress",
-    description:
-      "Monitor completed tasks, measure consistency, and celebrate small wins every day.",
+    description: "Monitor completed tasks, measure consistency, and celebrate small wins every day.",
     illustration: <IllustrationProgress />,
   },
   {
@@ -356,12 +331,7 @@ function LogoMark() {
 }
 
 const lm = StyleSheet.create({
-  wrap: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  wrap: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   ring: {
     position: "absolute",
     width: 44,
@@ -381,16 +351,8 @@ const lm = StyleSheet.create({
     flexDirection: "row",
     gap: 4,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 2.5,
-    backgroundColor: C.accent,
-  },
-  dotAlt: {
-    backgroundColor: C.accentSoft,
-    marginTop: 6,
-  },
+  dot: { width: 8, height: 8, borderRadius: 2.5, backgroundColor: C.accent },
+  dotAlt: { backgroundColor: C.accentSoft, marginTop: 6 },
 });
 
 // ─── Dot Indicator ────────────────────────────────────────────────────────────
@@ -418,14 +380,16 @@ export default function StarterScreen() {
   const listRef = useRef<FlatList<Slide>>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // Fix 1: Added fadeAnim to dependency array (it's stable from useRef so safe to include)
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 600,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
+  // Fix 2: Replaced unused `_` with proper typing using ViewToken
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0 && viewableItems[0].index !== null) {
@@ -445,18 +409,23 @@ export default function StarterScreen() {
   const handleGetStarted = async () => {
     try {
       await AsyncStorage.setItem("onboardingCompleted", "true");
-    } catch (_) {}
+    } catch {}
     router.replace("/screens/login");
   };
 
   const handleSkip = async () => {
     try {
       await AsyncStorage.setItem("onboardingCompleted", "true");
-    } catch (_) {}
+    } catch {}
     router.replace("/screens/login");
   };
 
   const isLast = activeIndex === SLIDES.length - 1;
+
+  // Fix 3: renderItem uses SlideItem directly — no unused `_` parameter needed
+  const renderItem = ({ item }: { item: Slide }) => (
+    <SlideItem slide={item} fadeAnim={fadeAnim} />
+  );
 
   return (
     <>
@@ -468,7 +437,11 @@ export default function StarterScreen() {
             <LogoMark />
             <Text style={s.brandName}>Life OS</Text>
           </View>
-          <TouchableOpacity onPress={handleSkip} activeOpacity={0.7} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <TouchableOpacity
+            onPress={handleSkip}
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Text style={s.skipText}>Skip</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -484,16 +457,13 @@ export default function StarterScreen() {
           bounces={false}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
-          renderItem={({ item }) => (
-            <SlideItem slide={item} fadeAnim={fadeAnim} />
-          )}
+          renderItem={renderItem}
           style={s.list}
         />
 
         {/* ── Bottom Bar ── */}
         <Animated.View style={[s.bottomBar, { opacity: fadeAnim }]}>
           <Dots count={SLIDES.length} active={activeIndex} />
-
           <TouchableOpacity
             style={[s.btn, isLast && s.btnPrimary]}
             onPress={isLast ? handleGetStarted : goNext}
@@ -516,19 +486,10 @@ export default function StarterScreen() {
 }
 
 // ─── Slide Item ───────────────────────────────────────────────────────────────
-function SlideItem({
-  slide,
-  fadeAnim,
-}: {
-  slide: Slide;
-  fadeAnim: Animated.Value;
-}) {
+function SlideItem({ slide, fadeAnim }: { slide: Slide; fadeAnim: Animated.Value }) {
   return (
     <Animated.View style={[s.slide, { opacity: fadeAnim }]}>
-      {/* Illustration area */}
       <View style={s.illustrationWrap}>{slide.illustration}</View>
-
-      {/* Text */}
       <View style={s.textWrap}>
         <Text style={s.headline}>{slide.headline}</Text>
         <Text style={s.description}>{slide.description}</Text>
@@ -539,12 +500,7 @@ function SlideItem({
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: C.bg,
-  },
-
-  // Top bar
+  root: { flex: 1, backgroundColor: C.bg },
   topBar: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -553,24 +509,9 @@ const s = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 16,
   },
-  brand: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  brandName: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: C.textPrimary,
-    letterSpacing: -0.3,
-  },
-  skipText: {
-    fontSize: 14,
-    color: C.textSecondary,
-    fontWeight: "500",
-  },
-
-  // Carousel
+  brand: { flexDirection: "row", alignItems: "center", gap: 10 },
+  brandName: { fontSize: 18, fontWeight: "700", color: C.textPrimary, letterSpacing: -0.3 },
+  skipText: { fontSize: 14, color: C.textSecondary, fontWeight: "500" },
   list: { flex: 1 },
   slide: {
     width: W,
@@ -580,8 +521,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 32,
     paddingBottom: 24,
   },
-
-  // Illustration
   illustrationWrap: {
     width: 240,
     height: 200,
@@ -589,13 +528,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 48,
   },
-
-  // Text
-  textWrap: {
-    alignItems: "center",
-    gap: 14,
-    paddingHorizontal: 8,
-  },
+  textWrap: { alignItems: "center", gap: 14, paddingHorizontal: 8 },
   headline: {
     fontSize: 28,
     fontWeight: "700",
@@ -611,8 +544,6 @@ const s = StyleSheet.create({
     lineHeight: 24,
     fontWeight: "400",
   },
-
-  // Bottom bar
   bottomBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -621,8 +552,6 @@ const s = StyleSheet.create({
     paddingBottom: 44,
     paddingTop: 20,
   },
-
-  // Buttons
   btn: {
     flexDirection: "row",
     alignItems: "center",
@@ -643,23 +572,9 @@ const s = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
   },
-  btnText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: C.textSecondary,
-    letterSpacing: 0.2,
-  },
-  btnTextPrimary: {
-    color: "#FFFFFF",
-  },
-
-  // Arrow icon
-  arrow: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: 16,
-    justifyContent: "flex-end",
-  },
+  btnText: { fontSize: 15, fontWeight: "600", color: C.textSecondary, letterSpacing: 0.2 },
+  btnTextPrimary: { color: "#FFFFFF" },
+  arrow: { flexDirection: "row", alignItems: "center", width: 16, justifyContent: "flex-end" },
   arrowLine: {
     width: 10,
     height: 1.5,

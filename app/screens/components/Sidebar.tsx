@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 const { width: W, height: H } = Dimensions.get("window");
-const SIDEBAR_WIDTH = Math.min(W * 0.78, 320); // Max width 320px
+const SIDEBAR_WIDTH = Math.min(W * 0.78, 320);
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -49,14 +49,13 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: "home-outline", route: "/screens/dashboard" },
-  { id: "profile",   label: "Profile",   icon: "person-outline", route: "/screens/profile" },
+  { id: "profile", label: "Profile", icon: "person-outline", route: "/screens/profile" },
 ];
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ initials }: { initials: string }) {
   return (
     <View style={av.wrap}>
-      {/* Outer ring */}
       <View style={av.ring} />
       <View style={av.circle}>
         <Text style={av.text}>{initials}</Text>
@@ -123,19 +122,11 @@ function NavRow({
         activeOpacity={1}
         style={[nr.row, active && nr.rowActive]}
       >
-        {/* Active indicator bar */}
         {active && <View style={nr.activeBar} />}
-
         <View style={[nr.iconWrap, active && nr.iconWrapActive]}>
-          <Ionicons
-            name={item.icon}
-            size={18}
-            color={active ? C.accent : C.textSecondary}
-          />
+          <Ionicons name={item.icon} size={18} color={active ? C.accent : C.textSecondary} />
         </View>
-
         <Text style={[nr.label, active && nr.labelActive]}>{item.label}</Text>
-
         {active && (
           <Ionicons
             name="chevron-forward"
@@ -160,9 +151,7 @@ const nr = StyleSheet.create({
     marginBottom: 4,
     position: "relative",
   },
-  rowActive: {
-    backgroundColor: C.accent + "14",
-  },
+  rowActive: { backgroundColor: C.accent + "14" },
   activeBar: {
     position: "absolute",
     left: 0,
@@ -244,37 +233,46 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
   const overlayAnim = useRef(new Animated.Value(0)).current;
   const [isMounted, setIsMounted] = useState(false);
 
-  // Mount/unmount with animation
+  // ✅ Fix: wrap animation logic in useCallback so refs are stable dependencies
+  const runOpenAnimation = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+      Animated.timing(overlayAnim, {
+        toValue: 1,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [slideAnim, overlayAnim]);
+
+  const runCloseAnimation = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: -SIDEBAR_WIDTH,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(overlayAnim, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setIsMounted(false));
+  }, [slideAnim, overlayAnim]);
+
+  // ✅ Fix: dependency array now includes stable callback refs
   useEffect(() => {
     if (visible) {
       setIsMounted(true);
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 260,
-          useNativeDriver: true,
-        }),
-        Animated.timing(overlayAnim, {
-          toValue: 1,
-          duration: 260,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      runOpenAnimation();
     } else {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: -SIDEBAR_WIDTH,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(overlayAnim, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-      ]).start(() => setIsMounted(false));
+      runCloseAnimation();
     }
-  }, [visible]);
+  }, [visible, runOpenAnimation, runCloseAnimation]);
 
   // Load persisted data
   useEffect(() => {
@@ -287,7 +285,6 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
         ]);
         if (name) setFullName(name);
         if (uname) setUsername(uname);
-        // Default to dark
         setIsDark(theme !== "light");
       } catch (e) {
         console.log(e);
@@ -306,26 +303,22 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      "Sign Out",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await AsyncStorage.multiRemove(["token", "username", "fullName"]);
-              onClose();
-              router.replace("/screens/login");
-            } catch (e) {
-              console.log(e);
-            }
-          },
+    Alert.alert("Sign Out", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await AsyncStorage.multiRemove(["token", "username", "fullName"]);
+            onClose();
+            router.replace("/screens/login");
+          } catch (e) {
+            console.log(e);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleNav = (route: string) => {
@@ -334,7 +327,6 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
     router.replace(route as any);
   };
 
-  // Compute initials (max 2 letters)
   const initials = fullName
     .trim()
     .split(/\s+/)
@@ -366,7 +358,11 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
         style={[s.panel, { width: SIDEBAR_WIDTH, transform: [{ translateX: slideAnim }] }]}
       >
         {/* Close button */}
-        <TouchableOpacity style={s.closeBtn} onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity
+          style={s.closeBtn}
+          onPress={onClose}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
           <View style={s.closeBtnInner}>
             <Ionicons name="close" size={18} color={C.textSecondary} />
           </View>
@@ -380,9 +376,7 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
           <View style={s.userSection}>
             <Avatar initials={initials} />
             <Text style={s.fullName}>{fullName}</Text>
-            {username ? (
-              <Text style={s.usernameText}>@{username}</Text>
-            ) : null}
+            {username ? <Text style={s.usernameText}>@{username}</Text> : null}
             <TouchableOpacity
               style={s.viewProfileBtn}
               onPress={() => handleNav("/screens/profile")}
@@ -439,18 +433,12 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
         {/* ── Logout (pinned bottom) ── */}
         <View style={s.footer}>
           <View style={{ height: 1, backgroundColor: C.border, opacity: 0.5, marginBottom: 16 }} />
-          <TouchableOpacity
-            style={s.logoutBtn}
-            onPress={handleLogout}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
             <View style={s.logoutIconWrap}>
               <Ionicons name="log-out-outline" size={18} color={C.danger} />
             </View>
             <Text style={s.logoutText}>Logout</Text>
           </TouchableOpacity>
-
-          {/* App version */}
           <Text style={s.versionText}>Life OS • v1.0.0</Text>
         </View>
       </Animated.View>
@@ -500,8 +488,6 @@ const s = StyleSheet.create({
     paddingBottom: 8,
     paddingHorizontal: 16,
   },
-
-  // User
   userSection: {
     alignItems: "flex-start",
     paddingBottom: 4,
@@ -536,11 +522,7 @@ const s = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.2,
   },
-
-  // Nav
   navSection: { gap: 0 },
-
-  // Theme
   themeRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -567,8 +549,6 @@ const s = StyleSheet.create({
     color: C.textSecondary,
     marginTop: 1,
   },
-
-  // Footer / Logout
   footer: {
     paddingHorizontal: 16,
     paddingBottom: 36,

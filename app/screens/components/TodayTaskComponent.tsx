@@ -115,7 +115,7 @@ function ProgressRing({ percentage }: { percentage: number }) {
     return () => {
       animatedValue.removeListener(listener);
     };
-  }, [percentage]);
+  }, [percentage, animatedValue]);
 
   const strokeDashoffset = animatedValue.interpolate({
     inputRange: [0, 100],
@@ -267,7 +267,7 @@ function AchievementBadge({ achievement, index }: { achievement: Achievement; in
         bounciness: 6,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, scaleAnim, index]);
 
   const { achieved } = achievement;
 
@@ -448,7 +448,7 @@ export default function ProgressComponent({ tasks: externalTasks, refreshTrigger
       Animated.timing(fadeAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 420, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -492,7 +492,7 @@ export default function ProgressComponent({ tasks: externalTasks, refreshTrigger
         {/* ── Header ── */}
         <View style={s.header}>
           <View>
-            <Text style={s.headerTitle}>Today's Progress</Text>
+            <Text style={s.headerTitle}>Today&apos;s Progress</Text>
             <Text style={s.headerSub}>{message}</Text>
           </View>
           <View style={[s.headerBadge, { backgroundColor: accentColor + "1A", borderColor: accentColor + "40" }]}>

@@ -54,7 +54,7 @@ function getMotivation(pct: number): string {
   if (pct >= 80)   return "Almost there — keep pushing!";
   if (pct >= 50)   return "Halfway through — stay focused.";
   if (pct >= 20)   return "Good start — keep the momentum.";
-  if (pct > 0)     return "You've begun — that's what counts.";
+  if (pct > 0)     return "You&apos;ve begun — that&apos;s what counts.";
   return "Ready to conquer the day?";
 }
 
@@ -172,7 +172,7 @@ export default function ProgressComponent({ tasks: externalTasks, refreshTrigger
         useNativeDriver: false,
       }),
     ]).start();
-  }, [percentage]);
+  }, [percentage, barAnim, fadeAnim]);
 
   const barWidth = barAnim.interpolate({
     inputRange: [0, 100],
@@ -197,7 +197,7 @@ export default function ProgressComponent({ tasks: externalTasks, refreshTrigger
             <Ionicons name="trending-up-outline" size={18} color={C.accent} />
           </View>
           <View>
-            <Text style={s.title}>Today's Progress</Text>
+            <Text style={s.title}>Today&apos;s Progress</Text>
             <Text style={s.subtitle}>
               {new Date().toLocaleDateString("en-IN", {
                 weekday: "long",

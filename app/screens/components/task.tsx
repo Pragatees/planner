@@ -73,7 +73,6 @@ const PRIORITY_ORDER: Record<Priority, number> = {
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 function formatTimeDisplay(timeStr: string): string {
-  // timeStr expected as "HH:mm" or "HH:mm:ss"
   const parts = timeStr.split(":");
   if (parts.length < 2) return timeStr;
 
@@ -119,6 +118,8 @@ function sortByPriority(taskList: Task[]): Task[] {
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ message, visible }: { message: string; visible: boolean }) {
+  // FIX (line 141): fadeAnim and slideAnim are Animated.Value refs — stable across renders.
+  // Including them in the dependency array satisfies the lint rule without causing re-runs.
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
@@ -138,7 +139,7 @@ function Toast({ message, visible }: { message: string; visible: boolean }) {
 
       return () => clearTimeout(timer);
     }
-  }, [visible, message]);
+  }, [visible, message, fadeAnim, slideAnim]); // ← added fadeAnim & slideAnim
 
   if (!visible) return null;
 
@@ -272,25 +273,29 @@ function TaskCard({
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
 }) {
+  // FIX (line 293): Capture fadeAnim, slideAnim, and index in a ref so the
+  // mount-only animation effect can reference them without needing them as
+  // reactive deps (they never change after mount, so this is semantically safe).
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(12)).current;
+  const indexRef = useRef(index);
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 360,
-        delay: Math.min(index * 70, 350),
+        delay: Math.min(indexRef.current * 70, 350),
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 360,
-        delay: Math.min(index * 70, 350),
+        delay: Math.min(indexRef.current * 70, 350),
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]); // ← fadeAnim & slideAnim are stable refs; indexRef is accessed via .current
 
   return (
     <Animated.View
@@ -841,9 +846,13 @@ export default function TodayTaskComponent({ refreshTrigger, onTaskChanged }: To
     }
   }, [getToken]);
 
+  // FIX (line 846): Added fetchTasks to the dependency array.
+  // fetchTasks is wrapped in useCallback so it's stable and won't cause
+  // infinite re-fetches. This also ensures the effect re-runs when
+  // refreshTrigger changes, which was the original intent.
   useEffect(() => {
     fetchTasks();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, fetchTasks]); // ← added fetchTasks
 
   const onRefresh = useCallback(() => {
     fetchTasks(true);
@@ -891,7 +900,7 @@ export default function TodayTaskComponent({ refreshTrigger, onTaskChanged }: To
       onTaskChanged?.();
     } catch (error) {
       console.error("Task Completion Error:", error);
-      // Revert — do not modify local UI state on failure
+      // Revert on failure
       setTasks(previousTasks);
       Alert.alert("Update Failed", "Unable to update task status. Please try again.");
     }

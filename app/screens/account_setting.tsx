@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import {
     View,
     Text,
@@ -211,11 +211,12 @@ export default function AccountSettings() {
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        loadProfile();
-    }, []);
-
-    const loadProfile = async () => {
+    // Fix: Wrapped loadProfile in useCallback so it has a stable reference.
+    // This allows it to be safely listed in the useEffect dependency array
+    // without causing an infinite re-render loop.
+    // The empty array [] means this function never needs to be recreated —
+    // it only reads from AsyncStorage and updates local state, no external deps.
+    const loadProfile = useCallback(async () => {
         try {
             const token = await AsyncStorage.getItem("token");
             const response = await fetch(`${API_URL}/api/auth/me`, {
@@ -237,7 +238,13 @@ export default function AccountSettings() {
                 useNativeDriver: true,
             }).start();
         }
-    };
+    }, [fadeAnim]);
+
+    // Fix: Added loadProfile to dependency array — now lint-clean.
+    // Safe because loadProfile is memoized via useCallback above.
+    useEffect(() => {
+        loadProfile();
+    }, [loadProfile]);
 
     if (loading) {
         return (

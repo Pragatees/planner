@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -108,7 +108,10 @@ function StatCard({
   color: string;
   delay: number;
 }) {
-  const anim = useRef(new Animated.Value(0)).current;
+  // FIX 1: Use a ref for the Animated.Value so it's stable, and list all deps
+  const animRef = useRef(new Animated.Value(0));
+  const anim = animRef.current;
+
   useEffect(() => {
     Animated.timing(anim, {
       toValue: 1,
@@ -116,12 +119,24 @@ function StatCard({
       delay,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [anim, delay]);
+
   return (
     <Animated.View
       style={[
         styles.statCard,
-        { borderTopColor: color, opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] },
+        {
+          borderTopColor: color,
+          opacity: anim,
+          transform: [
+            {
+              translateY: anim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [16, 0],
+              }),
+            },
+          ],
+        },
       ]}
     >
       <Text style={[styles.statValue, { color }]}>{value}</Text>
@@ -137,7 +152,10 @@ function AchievementBadge({
   achievement: Achievement;
   index: number;
 }) {
-  const anim = useRef(new Animated.Value(0)).current;
+  // FIX 2: Same pattern — stable ref + list anim and index as deps
+  const animRef = useRef(new Animated.Value(0));
+  const anim = animRef.current;
+
   useEffect(() => {
     Animated.spring(anim, {
       toValue: 1,
@@ -146,7 +164,7 @@ function AchievementBadge({
       tension: 80,
       friction: 8,
     }).start();
-  }, []);
+  }, [anim, index]);
 
   if (!achievement.earned) return null;
 
@@ -231,38 +249,9 @@ export default function ProfileComponent() {
   const headerAnim = useRef(new Animated.Value(0)).current;
   const avatarScale = useRef(new Animated.Value(0.8)).current;
 
-  useEffect(() => {
-    initLoad();
-  }, []);
-
-  const initLoad = async () => {
-    try {
-      setError(false);
-      await Promise.all([loadProfile(), loadTaskStats(), loadPreferences()]);
-      Animated.parallel([
-        Animated.timing(headerAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.spring(avatarScale, {
-          toValue: 1,
-          tension: 80,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     const token = await AsyncStorage.getItem("token");
 
-    // Attempt API fetch
     if (token) {
       try {
         const res = await fetch(
@@ -290,7 +279,6 @@ export default function ProfileComponent() {
       }
     }
 
-    // Fall back to AsyncStorage
     const [n, u, e] = await Promise.all([
       AsyncStorage.getItem("fullName"),
       AsyncStorage.getItem("username"),
@@ -299,9 +287,9 @@ export default function ProfileComponent() {
     if (n) setFullName(n);
     if (u) setUsername(u);
     if (e) setEmail(e);
-  };
+  }, []);
 
-  const loadTaskStats = async () => {
+  const loadTaskStats = useCallback(async () => {
     const token = await AsyncStorage.getItem("token");
     if (!token) return;
     try {
@@ -318,16 +306,45 @@ export default function ProfileComponent() {
     } catch {
       // Leave at 0
     }
-  };
+  }, []);
 
-  const loadPreferences = async () => {
+  const loadPreferences = useCallback(async () => {
     const [dark, notif] = await Promise.all([
       AsyncStorage.getItem("darkMode"),
       AsyncStorage.getItem("notifications"),
     ]);
     if (dark !== null) setDarkMode(dark === "true");
     if (notif !== null) setNotifications(notif === "true");
-  };
+  }, []);
+
+  // FIX 3: Wrap initLoad in useCallback so it can be safely listed as a dep
+  const initLoad = useCallback(async () => {
+    try {
+      setError(false);
+      await Promise.all([loadProfile(), loadTaskStats(), loadPreferences()]);
+      Animated.parallel([
+        Animated.timing(headerAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(avatarScale, {
+          toValue: 1,
+          tension: 80,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadProfile, loadTaskStats, loadPreferences, headerAnim, avatarScale]);
+
+  useEffect(() => {
+    initLoad();
+  }, [initLoad]);
 
   const toggleDarkMode = async (val: boolean) => {
     setDarkMode(val);
@@ -487,7 +504,7 @@ export default function ProfileComponent() {
               ]}
             />
           </View>
-          <Text style={styles.progressLabel}>{pct}% of today's tasks done</Text>
+          <Text style={styles.progressLabel}>{pct}% of today&apos;s tasks done</Text>
         </View>
 
         {/* ── Achievements ── */}
@@ -506,8 +523,7 @@ export default function ProfileComponent() {
           <SettingRow
             icon="person-outline"
             label="Account"
-            onPress={() =>
-              router.push("/screens/account_setting")}
+            onPress={() => router.push("/screens/account_setting")}
           />
           <View style={styles.divider} />
           <SettingRow

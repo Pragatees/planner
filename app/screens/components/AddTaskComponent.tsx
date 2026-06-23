@@ -54,8 +54,13 @@ const PRIORITIES: { value: Priority; label: string; color: string; icon: keyof t
 ];
 
 // ─── Focused Input ────────────────────────────────────────────────────────────
+interface FocusFieldRenderProps {
+  focused: boolean;
+  onFocus: () => void;
+  onBlur: () => void;
+}
 interface FieldProps {
-  children: (focused: boolean) => React.ReactNode;
+  children: (props: FocusFieldRenderProps) => React.ReactNode;
 }
 function FocusField({ children }: FieldProps) {
   const [focused, setFocused] = useState(false);
@@ -77,7 +82,7 @@ function FocusField({ children }: FieldProps) {
 
   return (
     <Animated.View style={[ff.wrap, { borderColor }, focused && ff.wrapFocused]}>
-      {children(focused)}
+      {children({ focused, onFocus, onBlur })}
     </Animated.View>
   );
 }
@@ -190,7 +195,7 @@ export default function AddTaskComponent({ onTaskAdded }: AddTaskProps) {
       Animated.timing(fadeAnim,  { toValue: 1, duration: 420, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 420, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   // ── Pickers ──────────────────────────────────────────────────────────────────
   const onPickerChange = (event: DateTimePickerEvent, selected?: Date) => {
@@ -243,12 +248,12 @@ export default function AddTaskComponent({ onTaskAdded }: AddTaskProps) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-  taskName: taskName.trim(),
-  description: description.trim(),
-  taskDate: formatDateDB(selectedDate),
-  taskTime: formatTimeDB(selectedTime),
-  priority,
-}),
+          taskName: taskName.trim(),
+          description: description.trim(),
+          taskDate: formatDateDB(selectedDate),
+          taskTime: formatTimeDB(selectedTime),
+          priority,
+        }),
       });
 
       if (response.ok) {
@@ -294,13 +299,15 @@ export default function AddTaskComponent({ onTaskAdded }: AddTaskProps) {
         {/* ── Task Name ── */}
         <Label text="Task Name" />
         <FocusField>
-          {() => (
+          {({ onFocus, onBlur }) => (
             <TextInput
               style={s.nameInput}
               placeholder="What do you want to accomplish?"
               placeholderTextColor={C.textSecondary}
               value={taskName}
               onChangeText={(t) => setTaskName(t.slice(0, 100))}
+              onFocus={onFocus}
+              onBlur={onBlur}
               maxLength={100}
               returnKeyType="next"
               selectionColor={C.accent}
@@ -312,13 +319,15 @@ export default function AddTaskComponent({ onTaskAdded }: AddTaskProps) {
         {/* ── Description ── */}
         <Label text="Description" optional />
         <FocusField>
-          {() => (
+          {({ onFocus, onBlur }) => (
             <TextInput
               style={s.descInput}
               placeholder="Add additional details..."
               placeholderTextColor={C.textSecondary}
               value={description}
               onChangeText={setDescription}
+              onFocus={onFocus}
+              onBlur={onBlur}
               multiline
               numberOfLines={3}
               textAlignVertical="top"

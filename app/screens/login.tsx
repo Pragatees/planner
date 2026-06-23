@@ -219,7 +219,7 @@ export default function LoginScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {

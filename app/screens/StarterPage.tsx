@@ -13,7 +13,8 @@ import {
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const { width: W, height: H } = Dimensions.get("window");
+// Fix 1: Removed unused 'H' — only destructure 'W' which is actually used
+const { width: W } = Dimensions.get("window");
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -418,13 +419,15 @@ export default function StarterScreen() {
   const listRef = useRef<FlatList<Slide>>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // Fix 2: Added 'fadeAnim' to the dependency array to satisfy react-hooks/exhaustive-deps.
+  // fadeAnim is a stable ref value so adding it is safe — it won't cause extra re-runs.
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 600,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -442,17 +445,20 @@ export default function StarterScreen() {
     }
   };
 
+  // Fix 3 & 4: Replaced catch (_) with bare catch {} blocks.
+  // The error value was never used, so no binding is needed — this eliminates
+  // the '@typescript-eslint/no-unused-vars' warning on both catch clauses.
   const handleGetStarted = async () => {
     try {
       await AsyncStorage.setItem("onboardingCompleted", "true");
-    } catch (_) {}
+    } catch {}
     router.replace("/screens/login");
   };
 
   const handleSkip = async () => {
     try {
       await AsyncStorage.setItem("onboardingCompleted", "true");
-    } catch (_) {}
+    } catch {}
     router.replace("/screens/login");
   };
 
@@ -468,7 +474,11 @@ export default function StarterScreen() {
             <LogoMark />
             <Text style={s.brandName}>Life OS</Text>
           </View>
-          <TouchableOpacity onPress={handleSkip} activeOpacity={0.7} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <TouchableOpacity
+            onPress={handleSkip}
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Text style={s.skipText}>Skip</Text>
           </TouchableOpacity>
         </Animated.View>

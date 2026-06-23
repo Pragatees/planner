@@ -7,4 +7,11 @@ module.exports = defineConfig([
   {
     ignores: ['dist/*'],
   },
+  {
+    rules: {
+      'import/named': 'error',
+      'import/default': 'error',
+      'import/no-cycle': 'error',
+    },
+  },
 ]);

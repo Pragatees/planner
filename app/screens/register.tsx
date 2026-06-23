@@ -292,8 +292,7 @@ export default function SignUpScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
     ]).start();
-  }, []);
-
+  }, [fadeAnim, slideAnim]);
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
